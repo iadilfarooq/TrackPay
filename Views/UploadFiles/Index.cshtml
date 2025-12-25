@@ -1,0 +1,179 @@
+﻿@model UploadFilesViewModel
+@{
+    ViewBag.Title = "Filter Task or TimeStamp Data";
+}
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="bi bi-search me-2"></i>Search Criteria</h4>
+    </div>
+    <div class="card-body">
+        <form asp-action="Index" method="post">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="MonthYear" class="form-label">Select Month & Year</label>
+                    <input type="month" class="form-control" name="MonthYear" value="@(Model.Month > 0 && Model.Year > 0 ? $"{Model.Year}-{Model.Month.ToString("D2")}" : "")" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="CourierId" class="form-label">Courier ID</label>
+                    <input type="number" asp-for="CourierId" class="form-control" placeholder="Courier ID" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="DataType" class="form-label">Data Type</label>
+                    <select asp-for="DataType" class="form-select">
+                        <option value="">-- Select --</option>
+                        <option value="TaskData">Task Data Table</option>
+                        <option value="TimeStamps">TimeStamps Table</option>
+                    </select>
+                </div>
+
+                @* <div class="col-md-12 mt-3 d-flex align-items-center">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Reset</a>
+                </div> *@
+
+                <div class="col-md-12 mt-3 d-flex align-items-center">
+                    <button type="submit" class="btn btn-primary" id="searchButton">
+                        Search
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">
+                        Reset
+                    </a>
+                    <div class="spinner-border text-primary ms-2 d-none" role="status" id="loader">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model != null && Model.DataType == "TaskData" && Model.TaskData != null)
+{
+    <div class="mb-3 text-end">
+        <a href="@Url.Action("ExportMonthlyTaskDataToExcel", "UploadFiles", new {
+        month = Model.Month,
+        year = Model.Year,
+        courierId = Model.CourierId
+    })" class="btn btn-outline-success me-2">
+            <i class="bi bi-file-earmark-excel"></i> Export to Excel
+        </a>
+
+        <a href="@Url.Action("ExportMonthlyTaskDataToPdf", "UploadFiles", new {
+        month = Model.Month,
+        year = Model.Year,
+        courierId = Model.CourierId
+    })" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+        </a>
+    </div>
+
+    <div class="bg-success text-white p-2 text-center mb-3">
+        <h4>Monthly Task Data for (Name: @Model.TaskData.FirstOrDefault().Name - ID: @Model.TaskData.FirstOrDefault().CourierID)</h4>
+    </div>
+
+    var rowNumber = 1;
+    <div class="table-responsive">
+        <table class="table table-hover text-center">
+            <thead class="table-success">
+                <tr>
+                    <th>#</th>
+                    <th>Courier ID</th>
+                    <th>Name</th>
+                    <th>City</th>
+                    <th>Purchase ID</th>
+                    <th>Delivered Date & Time</th>
+                    <th>Distance KM</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.TaskData)
+                {
+                    <tr>
+                        <td>@(rowNumber++)</td>
+                        <td>@item.CourierID</td>
+                        <td>@item.Name</td>
+                        <td>@item.City</td>
+                        <td>@item.PurchaseID</td>
+                        <td>@item.DeliveredDateTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td>@item.DistanceKM</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (Model != null && Model.DataType == "TimeStamps" && Model.TimeStamps != null)
+{
+    <div class="mb-3 text-end">
+        <a href="@Url.Action("ExportMonthlyTimeStampsToExcel", "UploadFiles", new {
+        month = Model.Month,
+        year = Model.Year,
+        courierId = Model.CourierId
+    })" class="btn btn-outline-success me-2">
+            <i class="bi bi-file-earmark-excel"></i> Export to Excel
+        </a>
+
+        <a href="@Url.Action("ExportMonthlyTimeStampsToPdf", "UploadFiles", new {
+        month = Model.Month,
+        year = Model.Year,
+        courierId = Model.CourierId
+    })" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+        </a>
+    </div>
+
+    <div class="bg-success text-white p-2 text-center mb-3">
+        <h4>Monthly Time Stamps Data for (Name: @Model.TimeStamps.FirstOrDefault().Name - ID: @Model.TimeStamps.FirstOrDefault().CourierID)</h4>
+    </div>
+
+    var rowNumber = 1;
+    <div class="table-responsive">
+        <table class="table table-hover text-center">
+            <thead class="table-success">
+                <tr>
+                    <th>#</th>
+                    <th>Courier ID</th>
+                    <th>Name</th>
+                    <th>City</th>
+                    <th>Start Date</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.TimeStamps)
+                {
+                    <tr>
+                        <td>@(rowNumber++)</td>
+                        <td>@item.CourierID</td>
+                        <td>@item.Name</td>
+                        <td>@item.City</td>
+                        <td>@item.StartDate.ToString("dd/MM/yyyy")</td>
+                        <td>@item.StartTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td>@item.EndTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const searchButton = document.getElementById('searchButton');
+            const loader = document.getElementById('loader');
+
+            form.addEventListener('submit', function() {
+                // Show loader when form is submitting
+                loader.classList.remove('d-none');
+                searchButton.disabled = true;
+            });
+        });
+    </script>
+    };

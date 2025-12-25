@@ -1,0 +1,530 @@
+﻿@model TrackPay.Models.CombinedSummaryViewModel
+
+@{
+    ViewData["Title"] = "Courier Summary Reports";
+}
+
+<h2 class="mb-3 text-center">Courier Summary Reports</h2>
+
+<!-- Main Search Form -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4>
+            <i class="bi bi-search me-2"></i>
+            Search Criteria
+            <small>(Without Duty Time Validation)</small>
+        </h4>
+    </div>
+    <div class="card-body">
+        <form asp-action="Index" method="post">
+            <div class="row g-3">
+                <!-- Monthly/Daily Report & Monthly Hourly Report Section in the same line-->
+                <div class="col-md-6">
+                    <h5 class="text-primary">Monthly/Daily Report</h5>
+                </div>
+                <div class="col-md-6 mt-4">
+                    <h5 class="text-primary">Monthly Hourly Report</h5>
+                </div>
+                <div class="col-md-3 mt-1">
+                    <label asp-for="SelectedMonthYear" class="form-label">Month/Year</label>
+                    <input type="month" asp-for="SelectedMonthYear" class="form-control"
+                           value="@(Model.SelectedMonthYear?.ToString("yyyy-MM") ?? "")" />
+                </div>
+                <div class="col-md-3 mt-1">
+                    <label asp-for="CourierID" class="form-label">Courier ID (For Daily Report)</label>
+                    <input type="number" asp-for="CourierID" class="form-control"
+                           placeholder="Enter Courier ID"
+                           value="@(Model.CourierID > 0 ? Model.CourierID.ToString() : "")">
+                </div>
+                <div class="col-md-3 mt-1">
+                    <label asp-for="SelectedMonthYearForHourly" class="form-label">Month/Year</label>
+                    <input type="month" asp-for="SelectedMonthYearForHourly" class="form-control"
+                           value="@(Model.SelectedMonthYearForHourly?.ToString("yyyy-MM") ?? "")" />
+                </div>
+                <div class="col-md-3 mt-1">
+                    <label asp-for="CourierIdMonthlyHourly" class="form-label">Courier ID</label>
+                    <input type="number" asp-for="CourierIdMonthlyHourly" class="form-control"
+                           placeholder="Enter Courier ID"
+                           value="@(Model.CourierIdMonthlyHourly > 0 ? Model.CourierIdMonthlyHourly.ToString() : "")">
+                </div>
+
+                <!-- Hourly Report Section -->
+                <div class="col-md-12 mt-4">
+                    <h5 class="text-primary">Daily Hourly Report</h5>
+                </div>
+                <div class="col-md-3 mt-1">
+                    <label asp-for="SelectedDate" class="form-label">Date</label>
+                    <input type="date" asp-for="SelectedDate" class="form-control" />
+                </div>
+
+                <div class="col-md-3 mt-1">
+                    <label asp-for="CourierIdHourly" class="form-label">Courier ID</label>
+                    <input type="number" asp-for="CourierIdHourly" class="form-control"
+                           placeholder="Enter Courier ID"
+                           value="@(Model.CourierIdHourly > 0 ? Model.CourierIdHourly.ToString() : "")">
+                </div>
+
+                <div class="col-md-12 mt-3 d-flex align-items-center">
+                    <button type="submit" class="btn btn-primary" id="searchButton">
+                        Search
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">
+                        Reset
+                    </a>
+                    <div class="spinner-border text-primary ms-2 d-none" role="status" id="loader">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Monthly Summary -->
+@if (Model.ShowMonthlySummary)
+{
+    <div class="mb-3 text-end">
+        <a href="@Url.Action("ExportMonthlySummaryToExcel", "Delivery", new { month = Model.Month, year = Model.Year })" class="btn btn-outline-success me-2">
+            <i class="bi bi-file-earmark-excel-fill"></i> Export to Excel
+        </a>
+        <a href="@Url.Action("ExportMonthlySummaryToPdf", "Delivery", new { month = Model.Month, year = Model.Year })" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Export to PDF
+        </a>
+    </div>
+    <div class="bg-success text-white p-2 text-center mb-3">
+        <h4>Monthly Summary - @Model.SelectedMonthName @Model.Year</h4>
+    </div>
+
+    @if (Model.MonthlySummaries != null && Model.MonthlySummaries.Any())
+    {
+        var grandTotalPay = Model.MonthlySummaries.Sum(x => x.TotalPay);
+        var rowNumber = 1; // Initialize row counter
+
+        <div class="table-responsive">
+            <table class="table table-hover text-center">
+                <thead class="table-success">
+                    <tr>
+                        <th>#</th>
+                        <th>Courier ID</th>
+                        <th>Name</th>
+                        <th>Total Order Pay</th>
+                        <th>Total Distance Pay</th>
+                        <th>Total Pay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.MonthlySummaries.OrderBy(x => x.CourierID))
+                    {
+                        <tr>
+                            <td>@(rowNumber++)</td>
+                            <td>@item.CourierID</td>
+                            <td>@item.Name</td>
+                            <td>@item.TotalOrderPay.ToString("N0") kr</td>
+                            <td>@item.TotalDistancePay.ToString("N2") kr</td>
+                            <td class="fw-bold">@item.TotalPay.ToString("N2") kr</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold">
+                        <td colspan="5" class="text-center">GRAND TOTAL PAY</td>
+                        <td class="table-success">@grandTotalPay.ToString("N2") kr</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            No monthly summary data found for the selected criteria.
+        </div>
+    }
+}
+
+
+<!-- Daily Summary -->
+@if (Model.ShowDailySummary)
+{
+    <div class="mb-3 text-end">
+        <a href="@Url.Action("ExportDailySummaryToExcel", "Delivery", new {
+            month = Model.Month,
+            year = Model.Year,
+            courierId = Model.CourierID
+        })" class="btn btn-outline-success me-2">
+            <i class="bi bi-file-earmark-excel"></i> Export to Excel
+        </a>
+
+        <a href="@Url.Action("ExportDailySummaryToPdf", "Delivery", new {
+            month = Model.Month,
+            year = Model.Year,
+            courierId = Model.CourierID,
+            courierName = Model.SelectedCourierNameForDaily
+        })" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+        </a>
+    </div>
+    <div class="bg-success text-white p-2 text-center mb-3">
+        <h4>
+            Daily Summary - @Model.SelectedMonthName @Model.Year for
+            @if (Model.DailySummaries != null && Model.DailySummaries.Any())
+            {
+                <text>(Name: @Model.SelectedCourierNameForDaily - ID: @Model.CourierID)</text>
+            }
+            else
+            {
+                <text>ID: @Model.CourierID</text>
+            }
+        </h4>
+    </div>
+                
+    @if (Model.DailySummaries != null && Model.DailySummaries.Any())
+    {
+        var totalHourlyPay = Model.DailySummaries.Sum(x => x.TotalHourlyPay);
+        var totalOrderPay = Model.DailySummaries.Sum(x => x.TotalOrderPay);
+        var totalDistancePay = Model.DailySummaries.Sum(x => x.TotalDistancePay);
+        var totalPay = Model.DailySummaries.Sum(x => x.TotalPay);
+
+        <div class="table-responsive">
+            <table class="table table-hover text-center">
+                <thead class="table-success">
+                    <tr>
+                        <th>Date</th>
+                        <th>Courier ID</th>
+                        <th>Total Order Pay</th>
+                        <th>Total Distance Pay</th>
+                        <th>Total Pay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.DailySummaries)
+                    {
+                        <tr>
+                            <td>@item.StartDate.ToString("dd-MM-yyyy")</td>
+                            <td>@item.CourierID</td>
+                            <td>@item.TotalOrderPay.ToString("N0") kr</td>
+                            <td>@item.TotalDistancePay.ToString("N2") kr</td>
+                            <td class="fw-bold">@item.TotalPay.ToString("N2") kr</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="fw-bold">
+                    <tr>
+                        <td colspan="4" class="text-center">TOTAL</td>
+                        <td class="table-success">@totalPay.ToString("N2") kr</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            No daily summary data found for the selected courier.
+        </div>
+    }
+}
+
+
+<!-- Monthly Hourly Summary -->
+@if (Model.ShowMonthlyHourlySummary)
+{
+    <div class="mb-3 text-end">
+        <a href="@Url.Action("ExportMonthlyHourlySummaryToExcel", "Delivery", new {
+            month = Model.SelectedMonthYearForHourly?.Month ?? 0,
+            year = Model.SelectedMonthYearForHourly?.Year ?? 0,
+            courierId = Model.CourierIdMonthlyHourly
+        })" class="btn btn-outline-success me-2">
+            <i class="bi bi-file-earmark-excel"></i> Export to Excel
+        </a>
+
+        <a href="@Url.Action("ExportMonthlyHourlySummaryToPdf", "Delivery", new {
+            month = Model.SelectedMonthYearForHourly.Value.Month,
+            year = Model.SelectedMonthYearForHourly.Value.Year,
+            courierId = Model.CourierIdMonthlyHourly,
+            courierName = Model.SelectedCourierNameMonthlyHourly
+        })" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+        </a>
+    </div>
+    <div class="bg-success text-white p-2 text-center mb-3">
+        <h4>
+            Monthly Hourly Summary - @Model.SelectedMonthNameHourly @Model.YearHourly for
+            @if (Model.MonthlyHourlyData != null && Model.MonthlyHourlyData.Any())
+            {
+                <text>(Name: @Model.SelectedCourierNameMonthlyHourly - ID: @Model.CourierIdMonthlyHourly)</text>
+            }
+            else
+            {
+                <text>ID: @Model.CourierIdMonthlyHourly</text>
+            }
+        </h4>
+    </div>
+
+    @if (Model.MonthlyHourlyData != null && Model.MonthlyHourlyData.Any())
+    {
+        var rowNumber = 1;
+        <div class="table-responsive">
+            <table class="table table-hover text-center">
+                <thead class="table-success">
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Time Period</th>
+                        <th>Complete Hours</th>
+                        <th>Time Duration</th>
+                        <th>Orders</th>
+                        <th>Distance (KM)</th>
+                        <th>Hourly Pay</th>
+                        <th>Order Pay</th>
+                        <th>Distance Pay</th>
+                        <th>Total Pay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.MonthlyHourlyData.OrderBy(x => x.StartDate)
+                   .ThenBy(x => x.StartTime == DateTime.MinValue ? 1 : 0)
+                   .ThenBy(x => x.StartTime))
+                    {
+                        <tr>
+                            <td>@(rowNumber++)</td>
+                            <td>@item.StartDate.ToString("dd-MM-yyyy")</td>
+                            @if (item.StartTime != DateTime.MinValue && item.EndTime != DateTime.MinValue)
+                            {
+                                <td>@item.StartTime.ToString("HH:mm:ss") - @item.EndTime.ToString("HH:mm:ss")</td>
+                            }
+                            else
+                            {
+                                <td>No Complete/Partial Hours</td>
+                            }
+                            <td class="text-center">
+                                @if (item.IsCompleteHour == true)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                }
+                            </td>
+                            <td>@(item.TimeDuration ?? "-")</td>
+                            <td>@item.OrderDelivered</td>
+                            <td>@(item.DistanceKM?.ToString("F2") ?? "-")</td>
+                            <td>@(item.HourlyPay.HasValue ? $"{item.HourlyPay.Value:F2} kr" : "-")</td>
+                            <td>@(item.OrderPay.HasValue ? $"{item.OrderPay.Value:F0} kr" : "-")</td>
+                            <td>@(item.DistancePay.HasValue ? $"{item.DistancePay.Value:F2} kr" : "-")</td>
+                            <td class="fw-bold">@(item.TotalPay.HasValue ? $"{item.TotalPay.Value:F2} kr" : "-")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="fw-bold">
+                    <tr>
+                        <td colspan="4" class="text-center">TOTAL</td>
+                        <td>
+                            @{
+                                // Calculate total time duration
+                                TimeSpan totalTime = new TimeSpan();
+                                foreach (var item in Model.MonthlyHourlyData)
+                                {
+                                    if (item.TimeDuration != null && TimeSpan.TryParse(item.TimeDuration, out TimeSpan time))
+                                    {
+                                        totalTime = totalTime.Add(time);
+                                    }
+                                }
+                                // Format as HH:mm:ss (will show hours > 24 if needed)
+                                string totalTimeFormatted = $"{(int)totalTime.TotalHours}:{totalTime.Minutes:00}:{totalTime.Seconds:00}";
+                            }
+                            @totalTimeFormatted
+                        </td>
+                        <td>@Model.MonthlyHourlyData.Sum(x => x.OrderDelivered)</td>
+                        <td>@Model.MonthlyHourlyData.Sum(x => x.DistanceKM ?? 0).ToString("F2") KM</td>
+                        <td>@Model.MonthlyHourlyData.Sum(x => x.HourlyPay ?? 0).ToString("F2") kr</td>
+                        <td>@Model.MonthlyHourlyData.Sum(x => x.OrderPay ?? 0).ToString("F0") kr</td>
+                        <td>@Model.MonthlyHourlyData.Sum(x => x.DistancePay ?? 0).ToString("F2") kr</td>
+                        <td class="table-success">@Model.MonthlyHourlyData.Sum(x => x.TotalPay ?? 0).ToString("F2") kr</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            No monthly hourly data found for the selected courier.
+        </div>
+    }
+}
+
+
+<!-- Hourly Summary -->
+@if (Model.ShowHourlySummary)
+{
+    <div class="mb-3 text-end">
+        <a href="@Url.Action("ExportHourlySummaryToExcel", "Delivery", new {
+            date = Model.SelectedDate?.ToString("yyyy-MM-dd"),
+            courierId = Model.CourierIdHourly
+        })" class="btn btn-outline-success me-2">
+            <i class="bi bi-file-earmark-excel"></i> Export to Excel
+        </a>
+
+        <a href="@Url.Action("ExportHourlySummaryToPdf", "Delivery", new {
+            date = Model.SelectedDate?.ToString("yyyy-MM-dd"),
+            courierId = Model.CourierIdHourly,
+            courierName = Model.SelectedCourierName
+        })" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+        </a>
+    </div>
+    <div class="bg-success text-white p-2 text-center mb-3">
+        <h4>
+            Hourly Summary - @Model.SelectedDate?.ToString("dd MMM yyyy") for
+            @if (Model.HourlyData != null && Model.HourlyData.Any())
+            {
+                <text>(Name: @Model.SelectedCourierName - ID: @Model.CourierIdHourly)</text>
+            }
+            else
+            {
+                <text>ID: @Model.CourierIdHourly</text>
+            }
+        </h4>
+    </div>
+
+    @if (Model.HourlyData != null && Model.HourlyData.Any())
+    {
+        var rowNumber = 1; // Initialize row counter
+        <div class="table-responsive">
+            <table class="table table-hover text-center">
+                <thead class="table-success">
+                    <tr>
+                        <th>#</th>
+                        <th>Time Period</th>
+                        <th>Complete Hours</th>
+                        <th>Time Duration</th>
+                        <th>Orders</th>
+                        <th>Distance (KM)</th>
+                        <th>Hourly Pay</th>
+                        <th>Order Pay</th>
+                        <th>Distance Pay</th>
+                        <th>Total Pay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.HourlyData.OrderBy(x =>
+                   x.StartTime == DateTime.MinValue ? 1 : 0).ThenBy(x => x.StartTime))
+                    {
+
+                        <tr>
+                            <td>@(rowNumber++)</td>
+                            @if (item.StartTime != DateTime.MinValue && item.EndTime != DateTime.MinValue)
+                            {
+                                <td>@item.StartTime.ToString("HH:mm:ss") - @item.EndTime.ToString("HH:mm:ss")</td>
+                            }
+                            else
+                            {
+                                <td>No Complete/Partial Hours</td>
+                            }
+                            <td class="text-center">
+                                @if (item.IsCompleteHour == true)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                }
+                            </td>
+                            <td>@(item.TimeDuration ?? "-")</td>
+                            <td>@item.OrderDelivered</td>
+                            <td>@(item.DistanceKM?.ToString("F2") ?? "-")</td>
+                            <td>@(item.HourlyPay.HasValue ? $"{item.HourlyPay.Value:F2} kr" : "-")</td>
+                            <td>@(item.OrderPay.HasValue ? $"{item.OrderPay.Value:F0} kr" : "-")</td>
+                            <td>@(item.DistancePay.HasValue ? $"{item.DistancePay.Value:F2} kr" : "-")</td>
+                            <td class="fw-bold">@(item.TotalPay.HasValue ? $"{item.TotalPay.Value:F2} kr" : "-")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="fw-bold">
+                <tfoot class="fw-bold">
+                    <tr>
+                        <td colspan="3" class="text-center">TOTAL</td>
+                        <td>
+                                @{
+                                    // Calculate total time duration
+                                    TimeSpan totalTime = new TimeSpan();
+                                    foreach (var item in Model.HourlyData)
+                                    {
+                                        if (TimeSpan.TryParse(item.TimeDuration, out TimeSpan time))
+                                        {
+                                            totalTime = totalTime.Add(time);
+                                        }
+                                    }
+                                    // Format as HH:mm:ss (will show hours > 24 if needed)
+                                    string totalTimeFormatted = $"{(int)totalTime.TotalHours}:{totalTime.Minutes:00}:{totalTime.Seconds:00}";
+                                }
+                                @totalTimeFormatted
+                        </td>
+                        <td>@Model.HourlyData.Sum(x => x.OrderDelivered)</td>
+                        <td>@Model.HourlyData.Sum(x => x.DistanceKM ?? 0).ToString("F2") KM</td>
+                        <td>@Model.HourlyData.Sum(x => x.HourlyPay ?? 0).ToString("F2") kr</td>
+                        <td>@Model.HourlyData.Sum(x => x.OrderPay ?? 0).ToString("F0") kr</td>
+                        <td>@Model.HourlyData.Sum(x => x.DistancePay ?? 0).ToString("F2") kr</td>
+                        <td class="table-success">@Model.HourlyData.Sum(x => x.TotalPay ?? 0).ToString("F2") kr</td>
+                    </tr>
+                </tfoot>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            No hourly data found for the selected criteria.
+        </div>
+    }
+}
+
+
+@if (!Model.ShowMonthlySummary && !Model.ShowDailySummary && !Model.ShowHourlySummary && !Model.ShowMonthlyHourlySummary)
+{
+    <div class="alert alert-info">
+        <h5><i class="bi bi-info-circle-fill me-2"></i>Information</h5>
+        <hr />
+        <h5>Please select the appropriate criteria to generate reports:</h5>
+        <h6>
+            <ul>
+                <li><span class="fw-bold">Monthly Summary for All Riders:</span> Choose a Month and Year under the <span class="text-primary fw-bold">Monthly/Daily Report</span> section.</li>
+                <li><span class="fw-bold">Daily Summary for a Specific Rider:</span> Choose a Month, Year, and Courier ID under the <span class="text-primary fw-bold">Monthly/Daily Report</span> section.</li>
+                <hr />
+                <li><span class="fw-bold">Monthly Hourly Report for a Specific Rider:</span> Select a Month, Year, and Courier ID under the <span class="text-primary fw-bold">Monthly Hourly Report</span> section.</li>
+                <hr />
+                <li><span class="fw-bold">Daily Hourly Report for a Specific Rider:</span> Choose a specific Date and Courier ID under the <span class="text-primary fw-bold">Daily Hourly Report</span> section.</li>
+            </ul>
+        </h6>
+    </div>
+}
+
+<style>
+    .bi-check-circle-fill, .bi-x-circle-fill {
+        font-size: 1.2rem;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const searchButton = document.getElementById('searchButton');
+            const loader = document.getElementById('loader');
+
+            form.addEventListener('submit', function() {
+                // Show loader when form is submitting
+                loader.classList.remove('d-none');
+                searchButton.disabled = true;
+            });
+        });
+    </script>
+}

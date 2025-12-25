@@ -1,0 +1,129 @@
+﻿@{
+    ViewData["Title"] = "Upload Excel Files";
+}
+
+<div class="container mt-4">
+    <h2 class="text-center">Upload Excel Files</h2>
+    <h3 class="text-center">Make sure to upload the correct Excel file into the appropriate section.</h3>
+    <div class="row mt-2">
+        <!-- Task Data Upload -->
+        <div class="col-md-6 mb-4">
+            <div class="card rounded">
+                <div class="card-header bg-primary text-white">
+                    <h4>Task Data</h4>
+                </div>
+                <div class="card-body">
+                    <form id="taskDataForm" asp-action="UploadTaskDataExcelFile" enctype="multipart/form-data" method="post" onsubmit="return validateAndDisableButton('taskDataFile', 'taskButton')">
+                        <div class="mb-3">
+                            <label for="taskDataFile" class="form-label">Choose Excel File</label>
+                            <input type="file" class="form-control" name="file" id="taskDataFile" required />
+                        </div>
+                        <button type="submit" id="taskButton" class="btn btn-success">
+                            <span class="default-text"><i class="bi bi-upload me-2"></i>Upload</span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        </button>
+                    </form>
+
+                    @if (ViewBag.TaskDataMessage != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show mt-4" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>@ViewBag.TaskDataMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (ViewBag.TaskDataErrors != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i><strong>Task Data Errors:</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach (var error in (List<string>)ViewBag.TaskDataErrors)
+                                {
+                                    <li>@error</li>
+                                }
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Stamps Upload -->
+        <div class="col-md-6 mb-4">
+            <div class="card rounded">
+                <div class="card-header bg-primary text-white">
+                    <h4>Time Stamps</h4>
+                </div>
+                <div class="card-body">
+                    <form id="timeStampsForm" asp-action="UploadTimeStampsExcelFile" enctype="multipart/form-data" method="post" onsubmit="return validateAndDisableButton('timeStampsFile', 'timeButton')">
+                        <div class="mb-3">
+                            <label for="timeStampsFile" class="form-label">Choose Excel File</label>
+                            <input type="file" class="form-control" name="file" id="timeStampsFile" required />
+                        </div>
+                        <button type="submit" id="timeButton" class="btn btn-success">
+                            <span class="default-text"><i class="bi bi-upload me-2"></i>Upload</span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        </button>
+                    </form>
+
+                    @if (ViewBag.TimeStampsMessage != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show mt-4" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>@ViewBag.TimeStampsMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (ViewBag.TimeStampsErrors != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i><strong>Time Stamps Errors:</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach (var error in (List<string>)ViewBag.TimeStampsErrors)
+                                {
+                                    <li>@error</li>
+                                }
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function validateAndDisableButton(fileInputId, buttonId) {
+            const fileInput = document.getElementById(fileInputId);
+            const button = document.getElementById(buttonId);
+
+            // Validate file extension
+            const allowedExtensions = /(\.xls|\.xlsx)$/i;
+            if (!allowedExtensions.exec(fileInput.value)) {
+                alert("Please select a valid Excel file (.xls or .xlsx)");
+                fileInput.value = '';
+                return false;
+            }
+
+            // Disable button and show spinner
+            button.disabled = true;
+            button.querySelector(".default-text").classList.add("d-none");
+            button.querySelector(".spinner-border").classList.remove("d-none");
+
+            // Re-enable the button if form submission fails (for demo purposes)
+            // In a real application, this would be handled by the form's response
+            setTimeout(() => {
+                if (button.disabled) {
+                    button.disabled = false;
+                    button.querySelector(".default-text").classList.remove("d-none");
+                    button.querySelector(".spinner-border").classList.add("d-none");
+                }
+            }, 10000); // Fallback timeout after 10 seconds
+
+            return true;
+        }
+    </script>
+}
